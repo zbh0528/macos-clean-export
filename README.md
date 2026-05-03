@@ -102,11 +102,11 @@ The folder picker is intentional. On modern macOS, Quick Actions may be blocked 
 
 If the destination already contains a folder with the same name, the copy is written to a timestamped folder instead of overwriting the existing one.
 
-## Screenshot
+## Preview
 
-The screenshot below shows the installed Finder services on a demo folder. It uses a generic demo folder name and does not rely on any private local path.
+The preview below shows the installed Finder services on a demo folder. It uses a generic demo folder name and does not rely on any private local path.
 
-![Finder Services menu showing clean copy and clean zip actions](docs/images/finder-services-menu.jpg)
+![Finder Services menu showing clean copy and clean zip actions](docs/images/finder-services-menu.svg)
 
 ## Command Line Usage
 
