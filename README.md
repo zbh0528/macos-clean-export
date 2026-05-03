@@ -45,6 +45,8 @@ git clone https://github.com/<your-account>/macos-clean-export.git
 cd macos-clean-export
 ```
 
+Replace `<your-account>` with the GitHub account or organization that owns the repository.
+
 Run the installer:
 
 ```bash
