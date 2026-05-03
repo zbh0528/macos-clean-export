@@ -1,0 +1,102 @@
+#!/bin/zsh
+set -u
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+notify() {
+  /usr/bin/osascript - "$1" "$2" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display notification (item 2 of argv) with title (item 1 of argv)
+end run
+APPLESCRIPT
+}
+
+alert() {
+  /usr/bin/osascript - "$1" "$2" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display dialog (item 2 of argv) with title (item 1 of argv) buttons {"OK"} default button "OK"
+end run
+APPLESCRIPT
+}
+
+unique_zip_path() {
+  local parent="$1"
+  local base="$2"
+  local out="$parent/${base}_clean.zip"
+
+  if [[ -e "$out" ]]; then
+    out="$parent/${base}_clean_$(/bin/date +%Y%m%d_%H%M%S).zip"
+  fi
+
+  print -r -- "$out"
+}
+
+items=("$@")
+if (( ${#items[@]} == 0 )); then
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && items+=("$line")
+  done
+fi
+
+if (( ${#items[@]} == 0 )); then
+  alert "Clean Zip" "No folder was selected."
+  exit 1
+fi
+
+made=()
+failed=0
+junk_pattern='(^|/)(__MACOSX(/|$)|\.DS_Store$|\._[^/]*$)'
+
+for item in "${items[@]}"; do
+  item="${item%/}"
+
+  if [[ ! -d "$item" ]]; then
+    failed=$((failed + 1))
+    continue
+  fi
+
+  parent="${item:h}"
+  base="${item:t}"
+  archive="$(unique_zip_path "$parent" "$base")"
+
+  (
+    cd "$parent" || exit 1
+    COPYFILE_DISABLE=1 /usr/bin/zip -qry -X "$archive" "$base" \
+      -x "*.DS_Store" \
+      -x "*/.DS_Store" \
+      -x "._*" \
+      -x "*/._*" \
+      -x "__MACOSX" \
+      -x "__MACOSX/*" \
+      -x "*/__MACOSX" \
+      -x "*/__MACOSX/*"
+  )
+
+  if [[ $? -ne 0 || ! -f "$archive" ]]; then
+    failed=$((failed + 1))
+    continue
+  fi
+
+  /usr/bin/zip -dq "$archive" \
+    "*.DS_Store" "*/.DS_Store" \
+    "._*" "*/._*" \
+    "__MACOSX" "__MACOSX/*" \
+    "*/__MACOSX" "*/__MACOSX/*" >/dev/null 2>&1 || true
+
+  /usr/bin/xattr -cr "$archive" >/dev/null 2>&1 || true
+
+  if /usr/bin/zipinfo -1 "$archive" | /usr/bin/grep -Eq "$junk_pattern"; then
+    failed=$((failed + 1))
+    continue
+  fi
+
+  made+=("$archive")
+done
+
+if (( failed > 0 )); then
+  alert "Clean Zip" "Finished with ${failed} failed item(s). Created ${#made[@]} clean zip file(s)."
+  exit 1
+fi
+
+notify "Clean Zip" "Created ${#made[@]} clean zip file(s)."
+exit 0

@@ -1,0 +1,113 @@
+#!/bin/zsh
+set -u
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+notify() {
+  /usr/bin/osascript - "$1" "$2" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display notification (item 2 of argv) with title (item 1 of argv)
+end run
+APPLESCRIPT
+}
+
+alert() {
+  /usr/bin/osascript - "$1" "$2" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display dialog (item 2 of argv) with title (item 1 of argv) buttons {"OK"} default button "OK"
+end run
+APPLESCRIPT
+}
+
+choose_target() {
+  if [[ -n "${CLEAN_COPY_TARGET:-}" ]]; then
+    print -r -- "$CLEAN_COPY_TARGET"
+    return 0
+  fi
+
+  /usr/bin/osascript <<'APPLESCRIPT'
+try
+  set chosenFolder to choose folder with prompt "Choose the USB/external volume or destination folder:" default location POSIX file "/Volumes/"
+  return POSIX path of chosenFolder
+on error number -128
+  return ""
+end try
+APPLESCRIPT
+}
+
+unique_dir_path() {
+  local parent="$1"
+  local base="$2"
+  local out="$parent/$base"
+
+  if [[ -e "$out" ]]; then
+    out="$parent/${base}_clean_copy_$(/bin/date +%Y%m%d_%H%M%S)"
+  fi
+
+  print -r -- "$out"
+}
+
+items=("$@")
+if (( ${#items[@]} == 0 )); then
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && items+=("$line")
+  done
+fi
+
+if (( ${#items[@]} == 0 )); then
+  alert "Clean USB Copy" "No folder was selected."
+  exit 1
+fi
+
+target="$(choose_target)"
+if [[ -z "$target" || ! -d "$target" || ! -w "$target" ]]; then
+  exit 1
+fi
+target="${target%/}"
+
+copied=0
+failed=0
+
+for item in "${items[@]}"; do
+  item="${item%/}"
+
+  if [[ ! -d "$item" ]]; then
+    failed=$((failed + 1))
+    continue
+  fi
+
+  base="${item:t}"
+  dst="$(unique_dir_path "$target" "$base")"
+  /bin/mkdir -p "$dst" || {
+    alert "Clean USB Copy" "macOS denied writing to: ${dst}\n\nOpen System Settings > Privacy & Security and allow Automator/Workflow Runner access to Removable Volumes, or choose the USB folder when prompted."
+    failed=$((failed + 1))
+    continue
+  }
+
+  COPYFILE_DISABLE=1 /usr/bin/rsync -a \
+    --exclude='.DS_Store' \
+    --exclude='._*' \
+    --exclude='__MACOSX/' \
+    "$item/" "$dst/"
+
+  if [[ $? -ne 0 ]]; then
+    failed=$((failed + 1))
+    continue
+  fi
+
+  /usr/bin/find "$dst" -depth \( \
+    -name '.DS_Store' -o \
+    -name '._*' -o \
+    -name '__MACOSX' \
+  \) -exec /bin/rm -rf {} + >/dev/null 2>&1 || true
+
+  copied=$((copied + 1))
+done
+
+if (( failed > 0 )); then
+  alert "Clean USB Copy" "Finished with ${failed} failed item(s). Copied ${copied} folder(s) to ${target}."
+  exit 1
+fi
+
+notify "Clean USB Copy" "Copied ${copied} clean folder(s) to ${target}."
+exit 0
