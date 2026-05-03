@@ -1,23 +1,23 @@
 # macos-clean-export
 
-Finder Quick Actions for clean macOS folder export.
+用于干净导出 macOS 文件夹的 Finder 快速操作工具。
 
-It adds two right-click actions to Finder:
+安装后，Finder 右键菜单会增加两个操作：
 
-- `干净压缩`: create a clean zip next to the selected folder.
-- `干净复制到U盘`: copy the selected folder to a USB drive or external destination.
+- `干净压缩`：在所选文件夹旁边生成一个干净的 zip 压缩包。
+- `干净复制到U盘`：将所选文件夹干净复制到 U 盘或其他外部目标位置。
 
-The output excludes common macOS metadata artifacts:
+导出的结果会排除常见的 macOS 元数据文件：
 
 - `.DS_Store`
-- `._*` AppleDouble files
+- `._*` AppleDouble 文件
 - `__MACOSX`
 
-## Why This Exists
+## 为什么需要这个工具
 
-macOS stores Finder view state, resource forks, tags, quarantine flags, and other metadata in ways that are useful on macOS but noisy when sharing files with Windows, Linux, NAS devices, USB drives, or online submission systems.
+macOS 会保存 Finder 视图状态、资源分叉、标签、隔离属性等元数据。这些信息对 macOS 有用，但把文件夹发给 Windows、Linux、NAS、U 盘或线上提交系统时，往往会变成多余文件。
 
-Common examples include:
+常见例子包括：
 
 ```text
 .DS_Store
@@ -25,154 +25,154 @@ Common examples include:
 __MACOSX/
 ```
 
-System settings such as `DSDontWriteNetworkStores` can reduce some `.DS_Store` behavior on network shares, but they do not fully solve clean zip creation or USB export. This project focuses on the export step: the original folder can stay unchanged, while the copied or zipped output is clean.
+`DSDontWriteNetworkStores` 之类的系统设置只能减少部分网络共享场景下的 `.DS_Store`，不能完整解决压缩包和 U 盘导出问题。这个项目只处理“导出结果”：原始文件夹保持不变，复制出去或压缩出来的结果保持干净。
 
-## Requirements
+## 系统要求
 
 - macOS
 - Finder
-- Automator / Quick Actions support
-- Built-in command line tools: `zsh`, `zip`, `zipinfo`, `rsync`, `osascript`, `plutil`
+- 支持 Automator / 快速操作
+- 系统自带命令行工具：`zsh`、`zip`、`zipinfo`、`rsync`、`osascript`、`plutil`
 
-No Homebrew dependency is required.
+不需要安装 Homebrew。
 
-## Install
+## 安装
 
-Clone the repository:
+克隆仓库：
 
 ```bash
-git clone https://github.com/<your-account>/macos-clean-export.git
+git clone https://github.com/<你的账号>/macos-clean-export.git
 cd macos-clean-export
 ```
 
-Replace `<your-account>` with the GitHub account or organization that owns the repository.
+请把 `<你的账号>` 替换为实际拥有这个仓库的 GitHub 账号或组织名。
 
-Run the installer:
+运行安装脚本：
 
 ```bash
 zsh install.sh
 ```
 
-The installer copies the command line scripts to:
+安装脚本会把命令行脚本复制到：
 
 ```text
 ~/.local/bin/macos-clean-zip
 ~/.local/bin/macos-clean-copy-usb
 ```
 
-It also creates Finder Quick Actions under:
+同时会在下面的位置创建 Finder 快速操作：
 
 ```text
 ~/Library/Services/干净压缩.workflow
 ~/Library/Services/干净复制到U盘.workflow
 ```
 
-If the actions do not appear immediately, restart Finder:
+如果右键菜单里没有立刻出现这两个操作，可以重启 Finder：
 
 ```bash
 killall Finder
 ```
 
-If they still do not appear, log out and log back in.
+如果仍然没有出现，退出登录后重新登录一次。
 
-## Usage
+## 使用方法
 
-### Clean Zip
+### 干净压缩
 
-1. In Finder, right-click a folder.
-2. Choose `快速操作`.
-3. Choose `干净压缩`.
+1. 在 Finder 中右键点击一个文件夹。
+2. 选择 `快速操作`。
+3. 选择 `干净压缩`。
 
-A zip file is created next to the selected folder:
+工具会在所选文件夹旁边生成压缩包：
 
 ```text
 FolderName_clean.zip
 ```
 
-If that file already exists, a timestamp is appended to avoid overwriting it.
+如果同名压缩包已经存在，工具会自动追加时间戳，避免覆盖旧文件。
 
-### Clean Copy To USB
+### 干净复制到 U 盘
 
-1. In Finder, right-click a folder.
-2. Choose `快速操作`.
-3. Choose `干净复制到U盘`.
-4. In the system folder picker, select the USB drive or destination folder.
+1. 在 Finder 中右键点击一个文件夹。
+2. 选择 `快速操作`。
+3. 选择 `干净复制到U盘`。
+4. 在系统文件夹选择器中选择 U 盘或目标文件夹。
 
-The folder picker is intentional. On modern macOS, Quick Actions may be blocked from writing to removable volumes unless the user explicitly chooses the destination.
+这里保留系统文件夹选择器是有意设计。现代 macOS 可能会阻止快速操作直接写入可移动磁盘；由用户手动选择目标位置后，系统会给本次操作授予写入权限。
 
-If the destination already contains a folder with the same name, the copy is written to a timestamped folder instead of overwriting the existing one.
+如果目标位置已经有同名文件夹，工具会自动写入一个带时间戳的新文件夹，避免覆盖已有内容。
 
-## Preview
+## 预览图
 
-The preview below shows the installed Finder services on a demo folder. It uses a generic demo folder name and does not rely on any private local path.
+下面的预览图展示了安装后的 Finder 服务菜单。示例使用通用演示文件夹名，不依赖任何私人本机路径。
 
-![Finder Services menu showing clean copy and clean zip actions](docs/images/finder-services-menu.svg)
+![Finder 服务菜单中显示干净复制和干净压缩操作](docs/images/finder-services-menu.svg)
 
-## Command Line Usage
+## 命令行用法
 
-You can also use the scripts directly.
+也可以直接运行脚本。
 
-Create a clean zip:
+创建干净压缩包：
 
 ```bash
 ~/.local/bin/macos-clean-zip /path/to/folder
 ```
 
-Copy cleanly to a known destination:
+复制到指定目标位置：
 
 ```bash
 CLEAN_COPY_TARGET=/Volumes/USB ~/.local/bin/macos-clean-copy-usb /path/to/folder
 ```
 
-`CLEAN_COPY_TARGET` is mainly useful for testing and scripted use. The Finder Quick Action normally asks you to choose the destination folder.
+`CLEAN_COPY_TARGET` 主要用于测试和脚本化场景。通过 Finder 快速操作使用时，通常会弹出目标文件夹选择器。
 
-## Verify The Output
+## 验证导出结果
 
-Check a zip file:
+检查 zip 压缩包：
 
 ```bash
 zipinfo -1 FolderName_clean.zip | grep -E '(^|/)(__MACOSX(/|$)|\.DS_Store$|\._[^/]*$)'
 ```
 
-No output means no matching macOS metadata artifacts were found.
+没有输出就表示没有发现匹配的 macOS 元数据文件。
 
-Check a copied folder:
+检查复制后的文件夹：
 
 ```bash
 find /Volumes/USB/FolderName \( -name '.DS_Store' -o -name '._*' -o -name '__MACOSX' \) -print
 ```
 
-No output means the copied folder is clean.
+没有输出就表示复制结果是干净的。
 
-## Troubleshooting
+## 常见问题
 
-### The Quick Actions Do Not Show Up
+### 右键菜单里没有出现快速操作
 
-Restart Finder:
+先重启 Finder：
 
 ```bash
 killall Finder
 ```
 
-If that is not enough, log out and log back in.
+如果还不行，退出登录后重新登录。
 
-You can also check that the workflow folders exist:
+也可以检查工作流文件夹是否已经存在：
 
 ```bash
 ls ~/Library/Services
 ```
 
-### Clean Copy Reports "Operation Not Permitted"
+### 干净复制提示“Operation Not Permitted”
 
-Use the destination picker and select the USB drive or a folder inside it. This grants the Quick Action access to the selected location.
+请使用弹出的目标文件夹选择器，并在里面选择 U 盘或 U 盘里的某个文件夹。这样 macOS 会给快速操作授予对该位置的访问权限。
 
-If macOS still blocks it, open:
+如果 macOS 仍然阻止写入，请打开：
 
 ```text
-System Settings -> Privacy & Security
+系统设置 -> 隐私与安全性
 ```
 
-Then check `Files and Folders`, `Removable Volumes`, or `Full Disk Access` for Automator-related entries such as:
+然后检查 `文件和文件夹`、`可移动宗卷` 或 `完全磁盘访问权限`，看是否有 Automator 相关项目，例如：
 
 ```text
 Automator
@@ -180,32 +180,32 @@ Automator Workflow Runner
 WorkflowServiceRunner
 ```
 
-The exact name varies by macOS version.
+具体名称会随 macOS 版本不同而变化。
 
-### Finder Still Creates .DS_Store Locally
+### Finder 仍然会在本地生成 .DS_Store
 
-That is expected. This tool does not try to disable Finder's local behavior. It cleans the exported zip or copied folder.
+这是正常现象。本工具不尝试禁止 Finder 的本地行为，只保证导出的压缩包或复制后的文件夹是干净的。
 
-The installer also sets these low-risk preferences:
+安装脚本也会设置下面两个低风险偏好项：
 
 ```bash
 defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool TRUE
 defaults write com.apple.desktopservices DSDontWriteUSBStores -bool TRUE
 ```
 
-They can reduce `.DS_Store` creation on network shares and USB drives, but they do not replace the clean export actions.
+它们可以减少网络共享和 U 盘上的 `.DS_Store`，但不能替代这里的干净导出操作。
 
-## Uninstall
+## 卸载
 
-Run:
+运行：
 
 ```bash
 zsh uninstall.sh
 ```
 
-This removes the installed scripts and Finder Quick Actions.
+该脚本会删除已安装的命令行脚本和 Finder 快速操作。
 
-The uninstall script does not reset your `com.apple.desktopservices` preferences. To reset them manually:
+卸载脚本不会重置 `com.apple.desktopservices` 偏好项。如果需要手动重置，可以执行：
 
 ```bash
 defaults delete com.apple.desktopservices DSDontWriteNetworkStores 2>/dev/null || true
@@ -213,9 +213,9 @@ defaults delete com.apple.desktopservices DSDontWriteUSBStores 2>/dev/null || tr
 killall Finder
 ```
 
-## What Gets Removed From Output
+## 导出时会移除什么
 
-During zip creation or USB copy, these paths are excluded or deleted from the exported result:
+无论是创建 zip 还是复制到 U 盘，导出结果都会排除或删除下面这些路径：
 
 ```text
 .DS_Store
@@ -223,8 +223,8 @@ During zip creation or USB copy, these paths are excluded or deleted from the ex
 __MACOSX
 ```
 
-The source folder is not modified.
+源文件夹不会被修改。
 
-## License
+## 许可证
 
 MIT
